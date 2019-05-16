@@ -42,6 +42,7 @@ import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.AuthorizationValue;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
@@ -58,6 +59,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toCollection;
@@ -522,5 +524,18 @@ public class SwaggerServiceImpl implements SwaggerService {
 
     private Map<String, Object> getResponseExample(final Map<String, Schema> properties) {
         return properties.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue().getExample()));
+    }
+
+    @Override
+    public String replaceServerList(String payload, List<String> graviteeUrls) {
+        OpenAPI openApi = new OpenAPIV3Parser().readContents(payload).getOpenAPI();
+        if (openApi != null) {
+            List<Server> graviteeServers = graviteeUrls.stream()
+                    .map(url -> new Server().url(url))
+                    .collect(Collectors.toList());
+            openApi.setServers(graviteeServers);
+            return Yaml.pretty(openApi);
+        }
+        return payload;
     }
 }
